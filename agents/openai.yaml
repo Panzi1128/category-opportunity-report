@@ -1,0 +1,8 @@
+interface:
+  display_name: "类目机会分析"
+  short_description: "从标准提需表生成跨国家、跨类目的业务机会分析与飞书报告"
+  brand_color: "#17324D"
+  default_prompt: "请使用 $category-opportunity-report，基于提需表完成类目机会分析并输出飞书文档。"
+
+policy:
+  allow_implicit_invocation: true
