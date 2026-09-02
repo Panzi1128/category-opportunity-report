@@ -2,7 +2,7 @@
 
 ## 标准工作簿
 
-使用 [提需模板](https://bytedance.my.larkoffice.com/sheets/R2s4s9dyChiKOltdI1qmBq8QyBd)。模板包含以下 Sheet，第一行为填写说明，第二行为字段表头，第三行起为数据：
+使用用户提供的类目机会分析提需表。标准模板包含以下 Sheet，第一行为填写说明，第二行为字段表头，第三行起为数据：
 
 1. 大盘
 2. 店铺
