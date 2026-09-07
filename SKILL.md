@@ -7,6 +7,20 @@ description: 基于标准提需表，完成跨国家、跨类目的市场机会�
 
 把标准化原始数据转成可用于经营和广告决策的机会分析。核心不是堆数据，而是回答四个问题：优先做哪些国家、在哪些细分类目切入、用什么价格与产品线承接、内容如何证明并转化。
 
+## 0. 每次启用先同步版本
+
+每个新任务第一次触发本 Skill 时，先完整读取 [references/self-update.md](references/self-update.md)，再运行：
+
+```bash
+python3 "<SKILL_ROOT>/scripts/sync_skill_release.py" --apply --json
+```
+
+- `up_to_date`：静默继续
+- `updated`：简短说明版本变化，重新完整读取新版 `SKILL.md` 后继续；同一任务不再检查
+- `check_unavailable` 或 `update_failed`：保留当前版继续，不反复索权、不阻塞业务分析
+
+只接受固定官方仓库的稳定 Release 和完整 ZIP。没有 Python、目录只读或宿主只能临时读取文件时，按 `self-update.md` 的等价路径处理。
+
 ## 输入入口
 
 - 标准提需表：使用用户提供的类目机会分析提需表
@@ -61,8 +75,6 @@ description: 基于标准提需表，完成跨国家、跨类目的市场机会�
 
 优先使用当前环境可用的表格、文档、浏览器和绘图工具。没有飞书连接器时，让用户导出 XLSX/CSV 并上传；没有文档写入能力时，先生成可复制的 Markdown/Docx 草稿和独立图表文件。工具差异不能改变分析口径与视觉规则。
 
-## 版本同步
+## 版本发布
 
-GitHub 仓库是唯一发布源。安装到同一台电脑的多个 AI 时，运行 `scripts/sync_installations.py`，让各 AI 的 Skill 目录软链接到同一份仓库克隆，并默认注册每周更新任务。仓库更新被安全拉取后，所有已链接 AI 会立即读取新版，无需逐个复制。
-
-修改或发布 Skill 时，阅读 [references/installation-sync.md](references/installation-sync.md)。每台电脑仍需至少完成一次新版安装，之后由本地计划任务每周检查 GitHub；更新失败或检测到本地改动时保留旧版本。
+GitHub Release 是唯一发布源。各 AI 独立安装完整 Skill 目录，不创建后台计划任务，也不把多个 AI 目录软链接到同一代码源。修改或发布时阅读 [references/installation-sync.md](references/installation-sync.md)。
