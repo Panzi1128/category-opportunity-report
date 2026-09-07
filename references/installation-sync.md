@@ -31,6 +31,7 @@ python3 "<SKILL_ROOT>/scripts/sync_skill_release.py" --apply --json
 - 下载前后校验发布的 SHA-256
 - 拒绝压缩包中的符号链接，验证 Skill 身份和完整目录结构
 - 普通安装目录采用同目录暂存、备份和原子替换
+- 旧版软链接安装在首次调用时自动迁移为独立完整目录，源仓库保持不变
 - 官方 Git checkout 仅在工作区干净、远端匹配时快进到稳定 Release 标签
 - 任一步失败都保留旧版，不 reset、不强制覆盖
 

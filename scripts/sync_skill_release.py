@@ -187,8 +187,10 @@ def update_checkout(checkout: Path, tag: str) -> dict[str, object]:
 
 
 def replace_directory(root: Path, new_root: Path, local_tag: str) -> dict[str, object]:
-    if root.is_symlink() or not root.is_dir() or not (root / "SKILL.md").is_file():
-        raise ValueError("refusing to replace an unrecognized or symbolic-link Skill root")
+    was_symlink = root.is_symlink()
+    recognized = (root.resolve() / "SKILL.md").is_file() if was_symlink else (root / "SKILL.md").is_file()
+    if not root.is_dir() or not recognized:
+        raise ValueError("refusing to replace an unrecognized Skill root")
     backup = root.parent / f".{SKILL_NAME}.backup-{local_tag}"
     counter = 1
     while backup.exists():
@@ -200,7 +202,29 @@ def replace_directory(root: Path, new_root: Path, local_tag: str) -> dict[str, o
     except Exception:
         backup.rename(root)
         raise
-    return {"status": "updated", "installed_root": str(root), "backup_path": str(backup), "method": "atomic_replace"}
+    method = "symlink_migration" if was_symlink else "atomic_replace"
+    return {"status": "updated", "installed_root": str(root), "backup_path": str(backup), "method": method}
+
+
+def apply_archive_release(
+    root: Path,
+    local_tag: str,
+    tag: str,
+    release: dict[str, object],
+    asset_file: Path | None,
+) -> dict[str, object]:
+    asset, expected_digest = official_asset(release, tag)
+    with tempfile.TemporaryDirectory(prefix=f"{SKILL_NAME}-update-", dir=root.parent) as staging:
+        staging_path = Path(staging)
+        archive = staging_path / expected_asset(tag)
+        if asset_file:
+            shutil.copy2(asset_file, archive)
+        else:
+            download(str(asset["browser_download_url"]), archive)
+        if sha256(archive) != expected_digest:
+            raise ValueError("Release ZIP SHA-256 does not match the published digest")
+        new_root = validate_archive(archive, tag, staging_path / "extracted")
+        return replace_directory(root, new_root, local_tag)
 
 
 def remove_legacy_weekly_task() -> None:
@@ -226,7 +250,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check and safely apply the latest stable Skill Release.")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--root", type=Path, default=Path(__file__).absolute().parent.parent)
     parser.add_argument("--release-json", type=Path)
     parser.add_argument("--asset-file", type=Path)
     args = parser.parse_args()
@@ -254,6 +278,15 @@ def main() -> int:
     if not stable_version(tag) or release.get("draft") is True or release.get("prerelease") is True:
         emit({"status": "update_failed", "local_version": local_tag, "blocking": False, "message": f"最新发布不是稳定版本，继续使用 {local_tag}"}, args.json)
         return 0
+    if stable_version(tag) == stable_version(local_tag) and args.apply and root.is_symlink():
+        try:
+            result = apply_archive_release(root, local_tag, tag, release, args.asset_file)
+            remove_legacy_weekly_task()
+            result.update({"local_version": local_tag, "latest_version": tag, "reload_required": True, "checked_once_for_current_task": True, "message": f"已将 {tag} 从旧版软链接迁移为独立完整安装；重新读取 SKILL.md 后继续"})
+            emit(result, args.json)
+        except Exception as error:
+            emit({"status": "update_failed", "local_version": local_tag, "latest_version": tag, "blocking": False, "release_page": LATEST_PAGE, "message": f"旧版软链接迁移未完成；继续使用 {local_tag}", "detail": str(error)}, args.json)
+        return 0
     if stable_version(tag) <= stable_version(local_tag):
         remove_legacy_weekly_task()
         emit({"status": "up_to_date", "local_version": local_tag, "latest_version": tag, "checked_url": LATEST_PAGE, "message": f"当前 Skill 已是最新版 {local_tag}"}, args.json)
@@ -267,18 +300,7 @@ def main() -> int:
         if checkout:
             result = update_checkout(checkout, tag)
         else:
-            asset, expected_digest = official_asset(release, tag)
-            with tempfile.TemporaryDirectory(prefix=f"{SKILL_NAME}-update-", dir=root.parent) as staging:
-                staging_path = Path(staging)
-                archive = staging_path / expected_asset(tag)
-                if args.asset_file:
-                    shutil.copy2(args.asset_file, archive)
-                else:
-                    download(str(asset["browser_download_url"]), archive)
-                if sha256(archive) != expected_digest:
-                    raise ValueError("Release ZIP SHA-256 does not match the published digest")
-                new_root = validate_archive(archive, tag, staging_path / "extracted")
-                result = replace_directory(root, new_root, local_tag)
+            result = apply_archive_release(root, local_tag, tag, release, args.asset_file)
         remove_legacy_weekly_task()
         result.update({"local_version": local_tag, "latest_version": tag, "reload_required": True, "checked_once_for_current_task": True, "message": f"已从 {local_tag} 更新到 {tag}；重新读取新版 SKILL.md 后继续"})
         emit(result, args.json)

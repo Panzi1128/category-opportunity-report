@@ -19,6 +19,8 @@ python3 "<SKILL_ROOT>/scripts/sync_skill_release.py" --apply --json
 
 官方 Git checkout 只在工作区干净、远端精确匹配固定仓库时，快进到最新稳定 Release 标签。符号链接只解析到真实官方 checkout，不整体替换链接目标。
 
+检测到旧版安装遗留的 Skill 根目录软链接时，即使版本号相同，也要下载并校验当前稳定 Release，把链接本身备份后迁移为独立完整目录；不得删除或改写链接指向的源仓库。
+
 没有 Python 或不能持久安装时，使用等价工具完成：稳定版本比较、精确资产下载、SHA-256 校验、完整目录校验、备份和整体替换。只能临时读取时说明“本次使用新版，未持久安装”。
 
 固定最新发布页：<https://github.com/Panzi1128/category-opportunity-report/releases/latest>
