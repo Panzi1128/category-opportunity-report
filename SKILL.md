@@ -63,6 +63,6 @@ description: 基于标准提需表，完成跨国家、跨类目的市场机会�
 
 ## 版本同步
 
-GitHub 仓库是唯一发布源。安装到同一台电脑的多个 AI 时，优先运行 `scripts/sync_installations.py`，让各 AI 的 Skill 目录软链接到同一份仓库克隆；仓库内容更新后，所有已链接 AI 会立即读取新版，无需逐个复制。
+GitHub 仓库是唯一发布源。安装到同一台电脑的多个 AI 时，运行 `scripts/sync_installations.py`，让各 AI 的 Skill 目录软链接到同一份仓库克隆，并默认注册每周更新任务。仓库更新被安全拉取后，所有已链接 AI 会立即读取新版，无需逐个复制。
 
-修改或发布 Skill 时，阅读 [references/installation-sync.md](references/installation-sync.md)。跨电脑安装无法仅靠 Skill 自身自动更新，必须先在对应电脑拉取仓库更新，或使用该电脑已有的安全自动化机制定期拉取。
+修改或发布 Skill 时，阅读 [references/installation-sync.md](references/installation-sync.md)。每台电脑仍需至少完成一次新版安装，之后由本地计划任务每周检查 GitHub；更新失败或检测到本地改动时保留旧版本。

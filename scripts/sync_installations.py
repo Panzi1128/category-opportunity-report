@@ -7,6 +7,7 @@ import argparse
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 
@@ -42,6 +43,11 @@ def parse_args() -> argparse.Namespace:
         help="Move an existing target to a timestamped backup before linking.",
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--no-auto-update",
+        action="store_true",
+        help="Do not install the default weekly GitHub update task.",
+    )
     return parser.parse_args()
 
 
@@ -102,6 +108,15 @@ def main() -> int:
             continue
         seen.add(normalized)
         ok = link_target(normalized, source, args.replace, args.dry_run) and ok
+
+    if not args.no_auto_update:
+        installer = source / "scripts" / "install_weekly_update.py"
+        command = [sys.executable, os.fspath(installer), "--source", os.fspath(source)]
+        if args.dry_run:
+            command.append("--dry-run")
+        print("weekly update: " + " ".join(command))
+        completed = subprocess.run(command, check=False)
+        ok = completed.returncode == 0 and ok
     return 0 if ok else 1
 
 
